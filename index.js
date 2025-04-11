@@ -90,24 +90,11 @@ ${lines.join('')}`);
         return message.reply(`✅ กำหนดห้องสำหรับบอทเรียบร้อย: <#${newId}>`);
     }
     if (message.content.trim() === '!wallet-help') {
-        return message.reply(`📜 คำสั่งที่ใช้ได้ในบอท:
-
-!balance - เช็คเงินและ Karma ของคุณ
-!work - เริ่มภารกิจตอบคำถามเพื่อหาเงิน (ใคร work ก็ได้ แต่ตอบถูกได้คนเดียว)
-!answer <คำตอบ> - ตอบคำถามที่ถูกสุ่มมา
-!transfer @user <จำนวน> - โอนเงินให้ผู้ใช้อื่น
-!steal @user - ขโมยเงินจากผู้ใช้ (วันละ 5 ครั้ง, โอกาสสำเร็จ 50%)
-!setroom <channel_id> - (Admin) กำหนดห้องที่บอททำงานได้ (เก็บในฐานข้อมูลถาวร)
-!wallet-help - แสดงรายการคำสั่งทั้งหมด
-
-💡 หมายเหตุ:
-- Karma เริ่มต้นที่ 50
-- Karma < 20 มีโอกาสทำงานไม่สำเร็จ 20%
-- ทุกการขโมยจะลด Karma ลง 5
-- ตอบถูกใน !answer จะได้รางวัลสุ่มและ Karma +1
-- ข้อมูลทั้งหมดถูกเก็บในฐานข้อมูลถาวร ✅`);
-
+        const helpMessage = require('./walletHelp');
+        return message.reply(helpMessage);
     }
+
+
     if (message.author.bot) return;
 
     const [cmd, ...args] = message.content.trim().split(' ');
