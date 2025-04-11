@@ -1,6 +1,8 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, Events, Collection } = require('discord.js');
 const db = require('./db');
+const { getSetting, setSetting } = db;
+let allowedChannelId = getSetting('allowedChannelId') || null;
 
 const client = new Client({
     intents: [
@@ -65,22 +67,46 @@ function getWeightedRandomReward() {
     return Math.floor(Math.random() * 20) + 81;                      // 81-100 บาท (5%)
 }
 
+
 client.on(Events.MessageCreate, async message => {
-    if (message.content.trim() === '!help') {
+    if (message.content.trim() === '!top') {
+        const topUsers = db.prepare('SELECT user_id, balance FROM wallets ORDER BY balance DESC LIMIT 10').all();
+        if (topUsers.length === 0) return message.reply('ยังไม่มีใครมีเงินเลย!');
+
+        const lines = topUsers.map((user, i) => `#${i + 1} <@${user.user_id}> - ${user.balance} บาท`);
+        return message.reply(`📊 อันดับผู้มีเงินมากที่สุด:
+${lines.join('')}`);
+    }
+    if (allowedChannelId && message.channel.id !== allowedChannelId) return;
+
+    if (message.content.startsWith('!setroom')) {
+        if (!message.member.permissions.has('Administrator')) {
+            return message.reply('❌ คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (ต้องเป็นแอดมิน)');
+        }
+        const newId = message.content.split(' ')[1];
+        if (!newId) return message.reply('โปรดระบุ ID ห้อง เช่น !setroom 123456789012345678');
+        allowedChannelId = newId;
+        setSetting('allowedChannelId', newId);
+        return message.reply(`✅ กำหนดห้องสำหรับบอทเรียบร้อย: <#${newId}>`);
+    }
+    if (message.content.trim() === '!wallet-help') {
         return message.reply(`📜 คำสั่งที่ใช้ได้ในบอท:
 
 !balance - เช็คเงินและ Karma ของคุณ
-!work - เริ่มภารกิจตอบคำถามเพื่อหาเงิน
+!work - เริ่มภารกิจตอบคำถามเพื่อหาเงิน (ใคร work ก็ได้ แต่ตอบถูกได้คนเดียว)
 !answer <คำตอบ> - ตอบคำถามที่ถูกสุ่มมา
 !transfer @user <จำนวน> - โอนเงินให้ผู้ใช้อื่น
-!steal @user - ขโมยเงินจากผู้ใช้ (วันละ 5 ครั้ง, มีความเสี่ยง)
-!help - แสดงรายการคำสั่งทั้งหมด
+!steal @user - ขโมยเงินจากผู้ใช้ (วันละ 5 ครั้ง, โอกาสสำเร็จ 50%)
+!setroom <channel_id> - (Admin) กำหนดห้องที่บอททำงานได้ (เก็บในฐานข้อมูลถาวร)
+!wallet-help - แสดงรายการคำสั่งทั้งหมด
 
-💡 คำเตือน:
-- Karma ต่ำกว่า 20 มีโอกาสทำงานไม่สำเร็จ 20%
+💡 หมายเหตุ:
+- Karma เริ่มต้นที่ 50
+- Karma < 20 มีโอกาสทำงานไม่สำเร็จ 20%
 - ทุกการขโมยจะลด Karma ลง 5
 - ตอบถูกใน !answer จะได้รางวัลสุ่มและ Karma +1
-Version: 0.0.1 bata`);
+- ข้อมูลทั้งหมดถูกเก็บในฐานข้อมูลถาวร ✅`);
+
     }
     if (message.author.bot) return;
 
